@@ -37,6 +37,8 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewParameter
+import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.media3.common.C
@@ -162,7 +164,7 @@ class DRMChecker {
             }
             details
         }
-        Log.d(TAG, "Widevine check result: $result") // Log the result
+        Log.d(TAG, "Widevine check result: $result")
         return result
     }
 
@@ -170,7 +172,7 @@ class DRMChecker {
         val result =  checkDrmSupport(CLEARKEY_UUID, "ClearKey") {
             "ClearKey CDM is present."
         }
-        Log.d(TAG, "ClearKey check result: $result") // Log the result
+        Log.d(TAG, "ClearKey check result: $result")
         return result
     }
 
@@ -178,7 +180,7 @@ class DRMChecker {
         val result = checkDrmSupport(PLAYREADY_UUID, "PlayReady") {
             "PlayReady support check completed."
         }
-        Log.d(TAG, "PlayReady check result: $result") //Log the result
+        Log.d(TAG, "PlayReady check result: $result")
         return result
     }
 
@@ -208,10 +210,68 @@ class DRMChecker {
     }
 }
 
+// Preview Parameter Provider for DRMCheckItem
+class DRMCheckItemPreviewParameterProvider : PreviewParameterProvider<Triple<String, Boolean?, String?>> {
+    override val values: Sequence<Triple<String, Boolean?, String?>> = sequenceOf(
+        Triple("Widevine", true, "Security Level: L1\nWidevine L1 support: true\nWidevine L2 support: false\nWidevine L3 support: false"),
+        Triple("Widevine", false, "Widevine is NOT supported on this device."),
+        Triple("Widevine", null, null), // Example for null state
+        Triple("ClearKey", true, "ClearKey CDM is present."),
+        Triple("ClearKey", false, "ClearKey is NOT supported on this device."),
+        Triple("PlayReady", true, "PlayReady support check completed."),
+        Triple("PlayReady", false, "PlayReady is NOT supported on this device.")
+    )
+}
+
+@Preview(showBackground = true)
+@Composable
+fun DRMCheckItemPreview(@PreviewParameter(DRMCheckItemPreviewParameterProvider::class) params: Triple<String, Boolean?, String?>) {
+    CheckDrmInfoTheme {
+        DRMCheckItem(drmName = params.first, isSupported = params.second, details = params.third)
+    }
+}
+
+// Preview Parameter Provider for the complete screen
+class DRMInfoScreenPreviewParameterProvider : PreviewParameterProvider<Unit> {
+    override val values: Sequence<Unit> = sequenceOf(Unit) // You can add more configurations if needed
+
+}
 @Preview(showBackground = true)
 @Composable
 fun DRMInfoScreenPreview() {
     CheckDrmInfoTheme {
-        DRMInfoScreen()
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp)
+        )
+        {
+            Text(
+                text = buildAnnotatedString {
+                    pushStyle(SpanStyle(fontWeight = FontWeight.Bold, fontSize = 30.sp))
+                    append("DRM Check\n")
+                    pop()
+                },
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            DRMCheckItem(
+                drmName = "Widevine",
+                isSupported = true,
+                details = "Security Level: L1\nWidevine L1 support: true\nWidevine L2 support: false\nWidevine L3 support: false"
+            )
+            DRMCheckItem(
+                drmName = "ClearKey",
+                isSupported = true,
+                details = "ClearKey CDM is present."
+            )
+            DRMCheckItem(
+                drmName = "PlayReady",
+                isSupported = false,
+                details = "PlayReady is NOT supported on this device."
+            )
+        }
     }
+
 }

@@ -184,7 +184,7 @@ class DRMChecker {
         return result
     }
 
-    private fun checkDrmSupport(
+    fun checkDrmSupport(
         uuid: UUID,
         drmName: String,
         additionalChecks: (MediaDrm) -> String = { "" }

@@ -155,12 +155,20 @@ class DRMChecker {
             val widevineL1 = securityLevel.equals("L1", true)
             val widevineL2 = securityLevel.equals("L2", true)
             val widevineL3 = securityLevel.equals("L3", true)
+            val hdcpLevel = try {
+                mediaDrm.getPropertyString("hdcpLevel") // Get HDCP Level
+            } catch (e: MediaDrmException) {
+                "HDCP Level: Not Available (${e.message})" // Handle potential exceptions
+            }
+
 
             val details = buildString {
                 appendLine("Security Level: $securityLevel")
                 appendLine("Widevine L1 support: $widevineL1")
                 appendLine("Widevine L2 support: $widevineL2")
                 appendLine("Widevine L3 support: $widevineL3")
+                appendLine("HDCP Level: $hdcpLevel")
+
             }
             details
         }

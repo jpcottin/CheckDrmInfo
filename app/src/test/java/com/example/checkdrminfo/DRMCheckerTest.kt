@@ -4,17 +4,14 @@ import android.media.MediaDrm
 import android.util.Log
 import androidx.media3.common.C
 import io.mockk.every
-import io.mockk.mockk
 import io.mockk.mockkConstructor
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
-import io.mockk.verify
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 import java.util.UUID
-import io.mockk.OfTypeMatcher
 
 class DRMCheckerTest {
 

@@ -59,6 +59,6 @@ dependencies {
     debugImplementation(libs.androidx.ui.test.manifest)
 
     testImplementation(libs.junit)
-    testImplementation("io.mockk:mockk:1.13.8")
-    testImplementation ("androidx.media3:media3-test-utils:1.5.1")
+    testImplementation(libs.mockk)
+    testImplementation (libs.androidx.media3.test.utils)
 }

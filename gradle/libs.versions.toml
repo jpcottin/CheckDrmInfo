@@ -13,7 +13,6 @@ appcompat = "1.7.0"
 media3TestUtils = "1.5.1"
 mockk = "1.13.9"
 
-
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-media3-test-utils = { module = "androidx.media3:media3-test-utils", version.ref = "media3TestUtils" }

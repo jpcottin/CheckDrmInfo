@@ -172,10 +172,10 @@ fun DeviceInfoSection(deviceInfo: DeviceInfo) {
     Column {
         Text(
             text = "Device Info",
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.secondary
         )
-        Spacer(modifier = Modifier.height(8.dp))
         DeviceInfoItem("Manufacturer", deviceInfo.manufacturer)
         DeviceInfoItem("Model", deviceInfo.model)
         DeviceInfoItem("Android Version", deviceInfo.androidVersion)
@@ -186,17 +186,16 @@ fun DeviceInfoSection(deviceInfo: DeviceInfo) {
 
 @Composable
 fun DeviceInfoItem(label: String, value: String) {
-    Row(modifier = Modifier.padding(vertical = 4.dp)) {
-        Text(
-            text = "$label: ",
-            style = MaterialTheme.typography.bodyLarge,
-            fontWeight = FontWeight.Bold
-        )
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodyLarge
-        )
-    }
+    Text(
+        text = buildAnnotatedString {
+            pushStyle(SpanStyle(fontWeight = FontWeight.Bold))
+            append("$label: ")
+            pop()
+            append(value)
+        },
+        style = MaterialTheme.typography.labelSmall,
+        modifier = Modifier.padding(vertical = 1.dp)
+    )
 }
 
 @Composable
@@ -337,6 +336,26 @@ fun DeviceInfoSectionPreview() {
                 androidVersion = "14",
                 sdkInt = 34,
                 fingerprint = "google/cheetah/cheetah:14/UP1A.231005.007/10754064:user/release-keys"
+            )
+        )
+    }
+}
+
+@Preview(name = "TV Preview", device = "id:tv_1080p", showSystemUi = true)
+@Composable
+fun DeviceInfoTVPreview() {
+    CheckDrmInfoTheme {
+        DRMInfoContent(
+            modifier = Modifier,
+            widevineInfo = Pair(true, "Security Level: L1\nWidevine L1 support: true\nWidevine L2 support: false\nWidevine L3 support: false"),
+            clearKeyInfo = Pair(true, "ClearKey CDM is present."),
+            playReadyInfo = Pair(false, "PlayReady is NOT supported on this device."),
+            deviceInfo = DeviceInfo(
+                model = "sdk_google_atv64_amati_arm64",
+                manufacturer = "Google",
+                androidVersion = "14",
+                sdkInt = 34,
+                fingerprint = "google/sdk_google_atv64_amati_arm64/emu64a:14/UTT1.240131.001.F1/11825476:user/dev-keys"
             )
         )
     }

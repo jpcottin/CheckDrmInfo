@@ -2,6 +2,7 @@ package com.example.checkdrminfo
 
 import android.media.MediaDrm
 import android.media.MediaDrmException
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -24,10 +25,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -41,8 +40,13 @@ import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.media3.common.C
 import com.example.checkdrminfo.ui.theme.CheckDrmInfoTheme
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import java.util.UUID
 
 class MainActivity : ComponentActivity() {
@@ -61,17 +65,64 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+data class DRMInfoState(
+    val widevineInfo: Pair<Boolean, String>? = null,
+    val clearKeyInfo: Pair<Boolean, String>? = null,
+    val playReadyInfo: Pair<Boolean, String>? = null,
+    val deviceInfo: DeviceInfo = DeviceInfo()
+)
+
+data class DeviceInfo(
+    val model: String = try { Build.MODEL } catch (_: Exception) { "Unknown" },
+    val manufacturer: String = try { Build.MANUFACTURER } catch (_: Exception) { "Unknown" },
+    val androidVersion: String = try { Build.VERSION.RELEASE } catch (_: Exception) { "Unknown" },
+    val sdkInt: Int = try { Build.VERSION.SDK_INT } catch (_: Exception) { 0 },
+    val fingerprint: String = try { Build.FINGERPRINT } catch (_: Exception) { "Unknown" }
+)
+
+class DRMViewModel : ViewModel() {
+    private val _uiState = MutableStateFlow(DRMInfoState())
+    val uiState: StateFlow<DRMInfoState> = _uiState.asStateFlow()
+
+    private val drmChecker = DRMChecker()
+
+    init {
+        refreshDRMInfo()
+    }
+
+    fun refreshDRMInfo() {
+        _uiState.value = _uiState.value.copy(
+            widevineInfo = drmChecker.checkWidevineSupport(),
+            clearKeyInfo = drmChecker.checkClearKeySupport(),
+            playReadyInfo = drmChecker.checkPlayReadySupport()
+        )
+    }
+}
+
 @Composable
-fun DRMInfoScreen(modifier: Modifier = Modifier) {
-    var widevineInfo by remember { mutableStateOf<Pair<Boolean, String>?>(null) }
-    var clearKeyInfo by remember { mutableStateOf<Pair<Boolean, String>?>(null) }
-    var playReadyInfo by remember { mutableStateOf<Pair<Boolean, String>?>(null) }
+fun DRMInfoScreen(
+    modifier: Modifier = Modifier,
+    viewModel: DRMViewModel = viewModel()
+) {
+    val uiState by viewModel.uiState.collectAsState()
 
-    val drmChecker = remember { DRMChecker() }
-    widevineInfo = drmChecker.checkWidevineSupport()
-    clearKeyInfo = drmChecker.checkClearKeySupport()
-    playReadyInfo = drmChecker.checkPlayReadySupport()
+    DRMInfoContent(
+        modifier = modifier,
+        widevineInfo = uiState.widevineInfo,
+        clearKeyInfo = uiState.clearKeyInfo,
+        playReadyInfo = uiState.playReadyInfo,
+        deviceInfo = uiState.deviceInfo
+    )
+}
 
+@Composable
+fun DRMInfoContent(
+    modifier: Modifier = Modifier,
+    widevineInfo: Pair<Boolean, String>?,
+    clearKeyInfo: Pair<Boolean, String>?,
+    playReadyInfo: Pair<Boolean, String>?,
+    deviceInfo: DeviceInfo = DeviceInfo()
+) {
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -88,6 +139,16 @@ fun DRMInfoScreen(modifier: Modifier = Modifier) {
         )
         Spacer(modifier = Modifier.height(16.dp))
 
+        DeviceInfoSection(deviceInfo)
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Text(
+            text = "DRM Support",
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+
         DRMCheckItem(
             drmName = "Widevine",
             isSupported = widevineInfo?.first,
@@ -102,6 +163,38 @@ fun DRMInfoScreen(modifier: Modifier = Modifier) {
             drmName = "PlayReady",
             isSupported = playReadyInfo?.first,
             details = playReadyInfo?.second
+        )
+    }
+}
+
+@Composable
+fun DeviceInfoSection(deviceInfo: DeviceInfo) {
+    Column {
+        Text(
+            text = "Device Info",
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        DeviceInfoItem("Manufacturer", deviceInfo.manufacturer)
+        DeviceInfoItem("Model", deviceInfo.model)
+        DeviceInfoItem("Android Version", deviceInfo.androidVersion)
+        DeviceInfoItem("SDK Level", deviceInfo.sdkInt.toString())
+        DeviceInfoItem("Fingerprint", deviceInfo.fingerprint)
+    }
+}
+
+@Composable
+fun DeviceInfoItem(label: String, value: String) {
+    Row(modifier = Modifier.padding(vertical = 4.dp)) {
+        Text(
+            text = "$label: ",
+            style = MaterialTheme.typography.bodyLarge,
+            fontWeight = FontWeight.Bold
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyLarge
         )
     }
 }
@@ -144,17 +237,19 @@ fun DRMCheckItem(drmName: String, isSupported: Boolean?, details: String?) {
 
 class DRMChecker {
 
-    private val TAG = "DRMChecker"
-    private val WIDEVINE_UUID = C.WIDEVINE_UUID
-    private val CLEARKEY_UUID = C.CLEARKEY_UUID
-    private val PLAYREADY_UUID = C.PLAYREADY_UUID
+    companion object {
+        private const val TAG = "DRMChecker"
+        private val WIDEVINE_UUID = C.WIDEVINE_UUID
+        private val CLEARKEY_UUID = C.CLEARKEY_UUID
+        private val PLAYREADY_UUID = C.PLAYREADY_UUID
+    }
 
     fun checkWidevineSupport(): Pair<Boolean, String> {
         val result = checkDrmSupport(WIDEVINE_UUID, "Widevine") { mediaDrm ->
             val securityLevel = mediaDrm.getPropertyString("securityLevel")
-            val widevineL1 = securityLevel.equals("L1", true)
-            val widevineL2 = securityLevel.equals("L2", true)
-            val widevineL3 = securityLevel.equals("L3", true)
+            val widevineL1 = securityLevel.equals("L1", ignoreCase = true)
+            val widevineL2 = securityLevel.equals("L2", ignoreCase = true)
+            val widevineL3 = securityLevel.equals("L3", ignoreCase = true)
             val hdcpLevel = try {
                 mediaDrm.getPropertyString("hdcpLevel") // Get HDCP Level
             } catch (e: MediaDrmException) {
@@ -233,6 +328,22 @@ class DRMCheckItemPreviewParameterProvider : PreviewParameterProvider<Triple<Str
 
 @Preview(showBackground = true)
 @Composable
+fun DeviceInfoSectionPreview() {
+    CheckDrmInfoTheme {
+        DeviceInfoSection(
+            deviceInfo = DeviceInfo(
+                model = "Pixel 7",
+                manufacturer = "Google",
+                androidVersion = "14",
+                sdkInt = 34,
+                fingerprint = "google/cheetah/cheetah:14/UP1A.231005.007/10754064:user/release-keys"
+            )
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
 fun DRMCheckItemPreview(@PreviewParameter(DRMCheckItemPreviewParameterProvider::class) params: Triple<String, Boolean?, String?>) {
     CheckDrmInfoTheme {
         DRMCheckItem(drmName = params.first, isSupported = params.second, details = params.third)
@@ -243,38 +354,26 @@ fun DRMCheckItemPreview(@PreviewParameter(DRMCheckItemPreviewParameterProvider::
 @Composable
 fun DRMInfoScreenPreview() {
     CheckDrmInfoTheme {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp)
+        DRMInfoContent(
+            modifier = Modifier,
+            widevineInfo = Pair(true, "Security Level: L1\nWidevine L1 support: true\nWidevine L2 support: false\nWidevine L3 support: false"),
+            clearKeyInfo = Pair(true, "ClearKey CDM is present."),
+            playReadyInfo = Pair(false, "PlayReady is NOT supported on this device."),
+            deviceInfo = DeviceInfo("Pixel 7", "Google", "14", 34, "google/cheetah/cheetah:14/UP1A.231005.007/10754064:user/release-keys")
         )
-        {
-            Text(
-                text = buildAnnotatedString {
-                    pushStyle(SpanStyle(fontWeight = FontWeight.Bold, fontSize = 30.sp))
-                    append("DRM Check\n")
-                    pop()
-                },
-                modifier = Modifier.fillMaxWidth()
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            DRMCheckItem(
-                drmName = "Widevine",
-                isSupported = true,
-                details = "Security Level: L1\nWidevine L1 support: true\nWidevine L2 support: false\nWidevine L3 support: false"
-            )
-            DRMCheckItem(
-                drmName = "ClearKey",
-                isSupported = true,
-                details = "ClearKey CDM is present."
-            )
-            DRMCheckItem(
-                drmName = "PlayReady",
-                isSupported = false,
-                details = "PlayReady is NOT supported on this device."
-            )
-        }
     }
+}
 
+@Preview(showBackground = true)
+@Composable
+fun DRMInfoContentPreview() {
+    CheckDrmInfoTheme {
+        DRMInfoContent(
+            modifier = Modifier,
+            widevineInfo = Pair(true, "Security Level: L1\nWidevine L1 support: true\nWidevine L2 support: false\nWidevine L3 support: false"),
+            clearKeyInfo = Pair(true, "ClearKey CDM is present."),
+            playReadyInfo = Pair(false, "PlayReady is NOT supported on this device."),
+            deviceInfo = DeviceInfo("Pixel 7", "Google", "14", 34, "google/cheetah/cheetah:14/UP1A.231005.007/10754064:user/release-keys")
+        )
+    }
 }

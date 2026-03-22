@@ -1,5 +1,7 @@
 package com.example.checkdrminfo
 
+import android.content.Context
+import android.content.Intent
 import android.media.MediaDrm
 import android.media.MediaDrmException
 import android.os.Build
@@ -13,17 +15,22 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -31,6 +38,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -57,9 +65,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             CheckDrmInfoTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    DRMInfoScreen(modifier = Modifier.padding(innerPadding))
-                }
+                DRMInfoScreen()
             }
         }
     }
@@ -69,7 +75,7 @@ data class DRMInfoState(
     val widevineInfo: Pair<Boolean, String>? = null,
     val clearKeyInfo: Pair<Boolean, String>? = null,
     val playReadyInfo: Pair<Boolean, String>? = null,
-    val deviceInfo: DeviceInfo = DeviceInfo()
+    val deviceInfo: DeviceInfo = DeviceInfo(),
 )
 
 data class DeviceInfo(
@@ -97,22 +103,72 @@ class DRMViewModel : ViewModel() {
             playReadyInfo = drmChecker.checkPlayReadySupport()
         )
     }
+
+    fun getShareableReport(): String {
+        val state = _uiState.value
+        return buildString {
+            appendLine("DRM Check Report")
+            appendLine("----------------")
+            appendLine("Device Info:")
+            appendLine("Manufacturer: ${state.deviceInfo.manufacturer}")
+            appendLine("Model: ${state.deviceInfo.model}")
+            appendLine("Android Version: ${state.deviceInfo.androidVersion}")
+            appendLine("SDK Level: ${state.deviceInfo.sdkInt}")
+            appendLine("Fingerprint: ${state.deviceInfo.fingerprint}")
+            appendLine()
+            appendLine("DRM Support:")
+            appendLine("Widevine: ${if (state.widevineInfo?.first == true) "Supported" else "Not Supported"}")
+            state.widevineInfo?.second?.let { appendLine(it) }
+            appendLine("ClearKey: ${if (state.clearKeyInfo?.first == true) "Supported" else "Not Supported"}")
+            state.clearKeyInfo?.second?.let { appendLine(it) }
+            appendLine("PlayReady: ${if (state.playReadyInfo?.first == true) "Supported" else "Not Supported"}")
+            state.playReadyInfo?.second?.let { appendLine(it) }
+        }
+    }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DRMInfoScreen(
     modifier: Modifier = Modifier,
     viewModel: DRMViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
 
-    DRMInfoContent(
-        modifier = modifier,
-        widevineInfo = uiState.widevineInfo,
-        clearKeyInfo = uiState.clearKeyInfo,
-        playReadyInfo = uiState.playReadyInfo,
-        deviceInfo = uiState.deviceInfo
-    )
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("DRM Check") },
+                actions = {
+                    IconButton(onClick = {
+                        shareReport(context, viewModel.getShareableReport())
+                    }) {
+                        Icon(imageVector = Icons.Default.Share, contentDescription = "Share")
+                    }
+                }
+            )
+        },
+        modifier = modifier.fillMaxSize()
+    ) { innerPadding ->
+        DRMInfoContent(
+            modifier = Modifier.padding(innerPadding),
+            widevineInfo = uiState.widevineInfo,
+            clearKeyInfo = uiState.clearKeyInfo,
+            playReadyInfo = uiState.playReadyInfo,
+            deviceInfo = uiState.deviceInfo
+        )
+    }
+}
+
+fun shareReport(context: Context, report: String) {
+    val sendIntent: Intent = Intent().apply {
+        action = Intent.ACTION_SEND
+        putExtra(Intent.EXTRA_TEXT, report)
+        type = "text/plain"
+    }
+    val shareIntent = Intent.createChooser(sendIntent, null)
+    context.startActivity(shareIntent)
 }
 
 @Composable
@@ -129,16 +185,6 @@ fun DRMInfoContent(
             .verticalScroll(rememberScrollState())
             .padding(16.dp)
     ) {
-        Text(
-            text = buildAnnotatedString {
-                pushStyle(SpanStyle(fontWeight = FontWeight.Bold, fontSize = 30.sp))
-                append("DRM Check\n")
-                pop()
-            },
-            modifier = Modifier.fillMaxWidth()
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-
         DeviceInfoSection(deviceInfo)
         Spacer(modifier = Modifier.height(24.dp))
 
@@ -226,9 +272,12 @@ fun DRMCheckItem(drmName: String, isSupported: Boolean?, details: String?) {
                 text = drmName,
                 style = MaterialTheme.typography.titleMedium
             )
-            if (details != null) {
-                Text(text = details, style = MaterialTheme.typography.bodyMedium)
-            }
+        if (details != null) {
+            Text(
+                text = details,
+                style = MaterialTheme.typography.bodySmall,
+            )
+        }
         }
     }
     HorizontalDivider()

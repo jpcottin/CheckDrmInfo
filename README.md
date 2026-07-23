@@ -1,5 +1,28 @@
 # CheckDrmInfo
 
+[![CI](https://github.com/jpcottin/CheckDrmInfo/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/jpcottin/CheckDrmInfo/actions/workflows/ci.yml)
+[![Instrumented Tests](https://github.com/jpcottin/CheckDrmInfo/actions/workflows/instrumented-tests.yml/badge.svg?branch=main)](https://github.com/jpcottin/CheckDrmInfo/actions/workflows/instrumented-tests.yml)
+[![Release](https://github.com/jpcottin/CheckDrmInfo/actions/workflows/release.yml/badge.svg)](https://github.com/jpcottin/CheckDrmInfo/actions/workflows/release.yml)
+
+<details>
+<summary><b>CI details</b> — emulator matrix, API 30 → 37.1, plus an Android CLI leg</summary>
+
+Instrumented tests run on GitHub-hosted emulators (`google_apis` images — Widevine present, unlike AOSP `default` images):
+
+| Legs | Image | Emulator channel | GPU | Gating |
+|---|---|---|---|---|
+| API 30, 33, 36 | `google_apis` x86_64 | stable | swiftshader / auto | ✅ blocking |
+| API 37.0 | `google_apis_ps16k` (16 KB page size) | stable | lavapipe | non-blocking |
+| API 37.0 | `google_apis_ps16k` | canary (`--channel=3`) | lavapipe, auto | non-blocking |
+| API 37.1 | `google_apis_ps16k` | canary | lavapipe, auto | non-blocking |
+| Android CLI experiment | `google_apis_ps16k` 37.0 | canary | emulator default | non-blocking |
+
+The Android CLI leg drives the whole flow with the [`android` CLI](https://d.android.com/tools/agents/android-cli) (`android sdk install --canary`, `android emulator create/start/stop`) instead of `sdkmanager`/`avdmanager` and the emulator-runner action.
+
+All emulator-runner legs use full diagnostics (`-verbose -show-kernel -debug-metrics -metrics-collection`) and a `cmdline-tools;latest` update so `avdmanager` writes a valid `target=android-37.x` (the runner's preinstalled version writes `android-0`, which the emulator clamps to API 3, disabling the Vulkan/GLDirectMem auto-enable the ps16k images need).
+
+</details>
+
 An Android app that probes which DRM (Digital Rights Management) systems are present and active on a device, along with detailed capability information where available.
 
 ## What it checks

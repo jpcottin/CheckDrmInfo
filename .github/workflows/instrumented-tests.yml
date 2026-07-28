@@ -132,7 +132,7 @@ jobs:
 
       - name: Upload instrumented test results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: instrumented-test-results-api${{ matrix.api-level }}${{ matrix.suffix && format('-{0}', matrix.suffix) || '' }}
           path: app/build/reports/androidTests/
@@ -261,7 +261,7 @@ jobs:
 
       - name: Upload test report on failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: instrumented-test-report-android-cli-experiment
           path: app/build/reports/androidTests/
@@ -345,7 +345,7 @@ jobs:
 
       - name: Upload test report on failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: instrumented-test-report-emulator-preview
           path: app/build/reports/androidTests/
@@ -523,8 +523,16 @@ jobs:
             # platform what it is actually showing instead: the app's window
             # must be the resumed one, and its layout tree must be enumerable.
             FOCUS="$(timeout 15 adb shell dumpsys window 2>/dev/null | grep -ciE "ocus.*checkdrminfo" || echo 0)"
-            android layout -o "$WSDIR/layout_run$N.json" >/dev/null 2>&1 || true
-            NODES="$(grep -o '"key"' "$WSDIR/layout_run$N.json" 2>/dev/null | wc -l)"
+            # The layout tree is not populated the instant the process exists,
+            # so a single read can report zero nodes for an app that is drawing
+            # fine. Poll until nodes appear.
+            NODES=0
+            for _ in $(seq 1 15); do
+              android layout -o "$WSDIR/layout_run$N.json" >/dev/null 2>&1 || true
+              NODES="$(grep -o '"key"' "$WSDIR/layout_run$N.json" 2>/dev/null | wc -l)"
+              [ "$NODES" -gt 1 ] && break
+              sleep 1
+            done
             if [ -n "${APP_PID:-}" ] && [ "$FOCUS" -gt 0 ] && [ "$NODES" -gt 0 ]; then
               echo "RUN $N rendering: YES (focused window, $NODES layout nodes)"
             else
@@ -597,7 +605,7 @@ jobs:
 
       - name: Upload screenshots
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: preview-multirun-screenshots
           path: screenshots/
@@ -605,7 +613,7 @@ jobs:
 
       - name: Upload emulator logs
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: preview-multirun-emulator-logs
           path: |
@@ -750,8 +758,16 @@ jobs:
             # This is a Compose app, so the layout tree is the rendering
             # signal: a non-empty tree means the UI is present and enumerable,
             # which a screenshot diff cannot tell us for a static screen.
-            android layout -o "$WS/layout_cycle$N.json" || true
-            NODES="$(grep -o '"key"' "$WS/layout_cycle$N.json" 2>/dev/null | wc -l)"
+            # The layout tree is not populated the instant the process exists,
+            # so a single read can report zero nodes for an app that is drawing
+            # fine. Poll until nodes appear.
+            NODES=0
+            for _ in $(seq 1 15); do
+              android layout -o "$WS/layout_cycle$N.json" >/dev/null 2>&1 || true
+              NODES="$(grep -o '"key"' "$WS/layout_cycle$N.json" 2>/dev/null | wc -l)"
+              [ "$NODES" -gt 1 ] && break
+              sleep 1
+            done
             if [ -n "${PID:-}" ] && [ "$NODES" -gt 0 ]; then
               echo "CYCLE $N rendering: YES ($NODES layout nodes)"
             else
@@ -777,7 +793,7 @@ jobs:
 
       - name: Upload screenshots
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: cli-multirun-screenshots
           path: screenshots/
@@ -785,7 +801,7 @@ jobs:
 
       - name: Upload logs
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: cli-multirun-logs
           path: |

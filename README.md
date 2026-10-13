@@ -5,7 +5,7 @@
 [![Release](https://github.com/jpcottin/CheckDrmInfo/actions/workflows/release.yml/badge.svg)](https://github.com/jpcottin/CheckDrmInfo/actions/workflows/release.yml)
 
 <details>
-<summary><b>CI details</b> — emulator matrix, API 30 → 37.1, plus Android CLI and Emulator Preview legs</summary>
+<summary><b>CI details</b> — emulator matrix, API 30 → 37.2, plus Android CLI and Emulator Preview legs</summary>
 
 Instrumented tests run on GitHub-hosted emulators (`google_apis` images — Widevine present, unlike AOSP `default` images):
 
@@ -15,6 +15,7 @@ Instrumented tests run on GitHub-hosted emulators (`google_apis` images — Wide
 | API 37.0 | `google_apis_ps16k` (16 KB page size) | stable | lavapipe | non-blocking |
 | API 37.0 | `google_apis_ps16k` | canary (`--channel=3`) | lavapipe, auto | non-blocking |
 | API 37.1 | `google_apis_ps16k` | canary | lavapipe, auto | non-blocking |
+| API 37.2 | `google_apis_ps16k` | canary | lavapipe, auto | non-blocking |
 | Android CLI experiment | `google_apis_ps16k` 37.0 | canary | emulator default | non-blocking |
 | Emulator Preview (`emulators;latest`) | `google_apis_ps16k` 37.0 | preview package | auto | non-blocking |
 | Emulator Preview multi-run (snapshot cycles) | `google_apis_ps16k` 37.0 | preview package | auto | non-blocking |

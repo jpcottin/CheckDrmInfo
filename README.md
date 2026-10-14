@@ -11,7 +11,7 @@ Instrumented tests run on GitHub-hosted emulators (`google_apis` images — Wide
 
 | Legs | Image | Emulator channel | GPU | Gating |
 |---|---|---|---|---|
-| API 30, 33, 36 | `google_apis` x86_64 | stable | swiftshader / auto | ✅ blocking |
+| API 30, 33, 36 | `google_apis` x86_64 | stable | lavapipe / auto | ✅ blocking |
 | API 37.0 | `google_apis_ps16k` (16 KB page size) | stable | lavapipe | non-blocking |
 | API 37.0 | `google_apis_ps16k` | canary (`--channel=3`) | lavapipe, auto | non-blocking |
 | API 37.1 | `google_apis_ps16k` | canary | lavapipe, auto | non-blocking |

@@ -20,16 +20,19 @@ jobs:
         include:
           # minSdk 30 / target 35. google_apis images ship Widevine, which the
           # DRM checks need; the default AOSP image only has ClearKey.
+          # The gating legs render with lavapipe (Mesa's CPU Vulkan driver) or
+          # -gpu auto, the same backends as the preview legs, rather than
+          # swiftshader_indirect.
           - api-level: '30'
             target: google_apis
             ram-size: 2048M
             memory: 2048
-            gpu: swiftshader_indirect
+            gpu: lavapipe
           - api-level: '33'
             target: google_apis
             ram-size: 2048M
             memory: 2048
-            gpu: swiftshader_indirect
+            gpu: lavapipe
           - api-level: '36'
             target: google_apis
             ram-size: 2048M

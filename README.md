@@ -74,7 +74,7 @@ The project was refactored from a single 450-line `MainActivity` into a layered 
 
 ```
 app/src/main/java/com/example/checkdrminfo/
-├── MainActivity.kt              # 13 lines — just onCreate + theme
+├── MainActivity.kt              # just onCreate + theme
 ├── DRMChecker.kt                # MediaDrm probing; injectable factory for testability
 ├── DRMViewModel.kt              # viewModelScope + Dispatchers.IO; injectable dispatcher
 ├── model/
@@ -103,9 +103,10 @@ app/src/main/java/com/example/checkdrminfo/
 
 | Suite | Count | Notes |
 |---|---|---|
-| `DRMCheckerTest` | 17 | All 5 DRM systems × not-supported / exception / supported; Widevine detail parsing |
-| `DRMViewModelTest` | 10 | `MainDispatcherRule` + `kotlinx-coroutines-test` |
-| `DeviceInfoTest` | — | `DeviceInfo` default-value safety |
+| `DRMCheckerTest` | 18 | All 5 DRM systems × not-supported / exception / supported; Widevine security level, HDCP and version details |
+| `DRMViewModelTest` | 11 | `MainDispatcherRule` + `kotlinx-coroutines-test` |
+| `DeviceInfoTest` | 3 | `DeviceInfo` default-value safety |
+| `PreviewScreenshotTests` (screenshot) | 8 | Compose Preview screenshot tests, `validateDebugScreenshotTest` against the recorded references |
 | `DrmUiTest` (instrumented) | 9 | Compose UI tests for all component states |
 
 Run unit tests:
@@ -117,6 +118,12 @@ Run instrumented tests (device or emulator required):
 ```
 ./gradlew connectedAndroidTest
 ```
+
+Three workflows run on GitHub Actions: `ci.yml` (debug build, unit tests, screenshot
+validation and lint on every push and pull request, with the `unit-test-results`,
+`screenshot-test-report` and `lint-report` artifacts), `instrumented-tests.yml` (the emulator
+matrix described above) and `release.yml` (`assembleRelease` plus a GitHub release on a
+version tag).
 
 ## Build
 

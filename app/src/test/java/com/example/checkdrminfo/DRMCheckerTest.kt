@@ -59,7 +59,11 @@ class DRMCheckerTest {
 
         val result = checker.checkWidevineSupport()
         assertTrue(result is DrmResult.Supported)
-        assertTrue((result as DrmResult.Supported).details.contains("L1"))
+        // The details always spell out all three flags, so "L1" alone would
+        // match any level; check the resolved level and the flag line.
+        val details = (result as DrmResult.Supported).details
+        assertTrue(details, details.contains("Security Level: L1 (L1=true L2=false L3=false)"))
+        assertTrue(details, details.contains("HDCP Level: HW_SECURE_ALL"))
     }
 
     @Test
@@ -72,7 +76,9 @@ class DRMCheckerTest {
 
         val result = checker.checkWidevineSupport()
         assertTrue(result is DrmResult.Supported)
-        assertTrue((result as DrmResult.Supported).details.contains("L3"))
+        val details = (result as DrmResult.Supported).details
+        assertTrue(details, details.contains("Security Level: L3 (L1=false L2=false L3=true)"))
+        assertTrue(details, details.contains("HDCP Level: NONE"))
     }
 
     // ── ClearKey ──────────────────────────────────────────────────────────────

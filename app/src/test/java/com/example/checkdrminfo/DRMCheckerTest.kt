@@ -1,10 +1,12 @@
 package com.example.checkdrminfo
 
 import android.media.MediaDrm
+import android.media.MediaDrmException
 import android.util.Log
 import androidx.media3.common.C
 import com.example.checkdrminfo.model.DrmResult
 import io.mockk.every
+import io.mockk.verify
 import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
@@ -79,6 +81,37 @@ class DRMCheckerTest {
         val details = (result as DrmResult.Supported).details
         assertTrue(details, details.contains("Security Level: L3 (L1=false L2=false L3=true)"))
         assertTrue(details, details.contains("HDCP Level: NONE"))
+    }
+
+    @Test
+    fun `checkWidevineSupport - property query failure is reported as Supported with the error`() {
+        every { MediaDrm.isCryptoSchemeSupported(C.WIDEVINE_UUID) } returns true
+        every { mockDrm.getPropertyString("securityLevel") } throws MediaDrmException("vendor plugin busy")
+
+        val result = checker.checkWidevineSupport()
+        // The scheme is supported even if its properties cannot be read right now.
+        assertTrue(result is DrmResult.Supported)
+        val details = (result as DrmResult.Supported).details
+        // (The android.jar stub of MediaDrmException drops the message on the JVM, so only the prefix is checked.)
+        assertTrue(details, details.startsWith("Error querying Widevine properties"))
+        verify(exactly = 1) { mockDrm.close() }
+    }
+
+    @Test
+    fun `checkWidevineSupport - optional properties fall back to N-A`() {
+        every { MediaDrm.isCryptoSchemeSupported(C.WIDEVINE_UUID) } returns true
+        every { mockDrm.getPropertyString("securityLevel") } returns "L1"
+        every { mockDrm.getPropertyString("hdcpLevel") }     throws MediaDrmException("no hdcp")
+        every { mockDrm.getPropertyString("vendor") }        throws IllegalStateException("no vendor")
+        every { mockDrm.getPropertyString("version") }       returns "16.0"
+
+        val result = checker.checkWidevineSupport()
+        assertTrue(result is DrmResult.Supported)
+        val details = (result as DrmResult.Supported).details
+        assertTrue(details, details.contains("Security Level: L1 (L1=true L2=false L3=false)"))
+        assertTrue(details, details.contains("HDCP Level: N/A"))
+        assertTrue(details, details.contains("Vendor: N/A"))
+        assertTrue(details, details.contains("CDM Version: 16.0"))
     }
 
     // ── ClearKey ──────────────────────────────────────────────────────────────

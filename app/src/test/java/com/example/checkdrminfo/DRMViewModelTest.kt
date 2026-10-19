@@ -6,6 +6,8 @@ import io.mockk.mockk
 import io.mockk.unmockkAll
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -106,6 +108,33 @@ class DRMViewModelTest {
         val report = viewModel.getShareableReport()
         assertTrue(report.contains("[-] PlayReady"))
         assertTrue(report.contains("[-] Marlin"))
+    }
+
+    @Test
+    fun `shareable report indents every line of multi-line details`() {
+        val report = viewModel.getShareableReport()
+        val lines = report.lines()
+        val widevine = lines.indexOfFirst { it == "  [+] Widevine: Supported" }
+        assertTrue(report, widevine >= 0)
+        assertEquals("      L1", lines[widevine + 1])
+        assertEquals("      HDCP: HW_SECURE_ALL", lines[widevine + 2])
+        // Single-line details stay on one indented line, and a reason follows its marker inline.
+        assertTrue(report, lines.contains("      ClearKey CDM present"))
+        assertTrue(report, lines.contains("  [-] PlayReady: Not supported"))
+        assertTrue(report, lines.contains("  [!] PrimeTime: Init failed"))
+    }
+
+    @Test
+    fun `shareable report marks entries still being checked`() = runTest {
+        // A dispatcher that has not run yet: the checks are queued, the entries are Loading.
+        val pending = DRMViewModel(mockChecker, StandardTestDispatcher(testScheduler))
+        val before = pending.getShareableReport()
+        assertTrue(before, before.contains("[?] Widevine: checking…"))
+
+        advanceUntilIdle()
+        val after = pending.getShareableReport()
+        assertFalse(after, after.contains("[?]"))
+        assertTrue(after, after.contains("[+] Widevine: Supported"))
     }
 
     @Test

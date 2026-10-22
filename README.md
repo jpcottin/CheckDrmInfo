@@ -103,8 +103,8 @@ app/src/main/java/com/example/checkdrminfo/
 
 | Suite | Count | Notes |
 |---|---|---|
-| `DRMCheckerTest` | 20 | All 5 DRM systems × not-supported / exception / supported; Widevine security level, HDCP and version details, property-query failures and N/A fallbacks |
-| `DRMViewModelTest` | 13 | `MainDispatcherRule` + `kotlinx-coroutines-test`; shareable report layout and the still-checking marker |
+| `DRMCheckerTest` | 23 | All 5 DRM systems × not-supported / exception / supported; Widevine security level, HDCP and version details, property-query failures and N/A fallbacks; the MediaDrm handle (not opened for an unsupported scheme, a failing constructor reported by name, released even when a property read crashes) |
+| `DRMViewModelTest` | 15 | `MainDispatcherRule` + `kotlinx-coroutines-test`; shareable report layout and the still-checking marker; the loading placeholders and the declared entry order |
 | `DeviceInfoTest` | 3 | `DeviceInfo` default-value safety |
 | `PreviewScreenshotTests` (screenshot) | 8 | Compose Preview screenshot tests, `validateDebugScreenshotTest` against the recorded references |
 | `DrmUiTest` (instrumented) | 9 | Compose UI tests for all component states |

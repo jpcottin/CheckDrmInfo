@@ -142,4 +142,29 @@ class DRMViewModelTest {
         val report = viewModel.getShareableReport()
         assertTrue(report.contains("[!] PrimeTime"))
     }
+
+    @Test
+    fun `the entries keep their declared order`() = runTest {
+        val declared = listOf("Widevine", "ClearKey", "PlayReady", "Marlin", "PrimeTime")
+        assertEquals(declared, viewModel.uiState.value.drmEntries.map { it.name })
+
+        val pending = DRMViewModel(mockChecker, StandardTestDispatcher(testScheduler))
+        assertEquals(declared, pending.uiState.value.drmEntries.map { it.name })
+        advanceUntilIdle()
+        assertEquals(declared, pending.uiState.value.drmEntries.map { it.name })
+    }
+
+    @Test
+    fun `the loading state lists every scheme as a placeholder`() = runTest {
+        val pending = DRMViewModel(mockChecker, StandardTestDispatcher(testScheduler))
+        val before = pending.uiState.value
+        assertTrue(before.isLoading)
+        assertEquals(5, before.drmEntries.size)
+        assertTrue(before.drmEntries.all { it.result is DrmResult.Loading })
+
+        advanceUntilIdle()
+        val after = pending.uiState.value
+        assertFalse(after.isLoading)
+        assertTrue(after.drmEntries.none { it.result is DrmResult.Loading })
+    }
 }

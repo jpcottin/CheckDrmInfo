@@ -119,6 +119,31 @@ class DRMCheckerTest {
     // ── ClearKey ──────────────────────────────────────────────────────────────
 
     @Test
+    fun `checkWidevineSupport - blank properties read N-A like a failed query`() {
+        every { MediaDrm.isCryptoSchemeSupported(C.WIDEVINE_UUID) } returns true
+        every { mockDrm.getPropertyString("securityLevel") } returns "L3"
+        every { mockDrm.getPropertyString("hdcpLevel") }     returns ""
+        every { mockDrm.getPropertyString("vendor") }        returns "  "
+        every { mockDrm.getPropertyString("version") }       returns ""
+
+        val details = (checker.checkWidevineSupport() as DrmResult.Supported).details
+        assertTrue(details, details.contains("HDCP Level: N/A"))
+        assertTrue(details, details.contains("Vendor: N/A"))
+        assertTrue(details, details.contains("CDM Version: N/A"))
+    }
+
+    @Test
+    fun `checkWidevineSupport - the maximum HDCP level is reported next to the current one`() {
+        every { MediaDrm.isCryptoSchemeSupported(C.WIDEVINE_UUID) } returns true
+        every { mockDrm.getPropertyString("securityLevel") } returns "L1"
+        every { mockDrm.getPropertyString("hdcpLevel") }     returns "Unprotected"
+        every { mockDrm.getPropertyString("maxHdcpLevel") }  returns "HDCP-2.2"
+
+        val details = (checker.checkWidevineSupport() as DrmResult.Supported).details
+        assertTrue(details, details.contains("HDCP Level: Unprotected (max HDCP-2.2)"))
+    }
+
+    @Test
     fun `checkClearKeySupport - not supported returns NotSupported`() {
         every { MediaDrm.isCryptoSchemeSupported(C.CLEARKEY_UUID) } returns false
         assertTrue(checker.checkClearKeySupport() is DrmResult.NotSupported)

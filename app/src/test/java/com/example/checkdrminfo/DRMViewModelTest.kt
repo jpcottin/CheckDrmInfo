@@ -1,9 +1,11 @@
 package com.example.checkdrminfo
 
 import com.example.checkdrminfo.model.DrmResult
+import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.unmockkAll
+import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -83,6 +85,21 @@ class DRMViewModelTest {
         val state = viewModel.uiState.value
         assertFalse(state.isLoading)
         assertEquals(5, state.drmEntries.size)
+    }
+
+    @Test
+    fun `a scan requested while one is pending replaces it instead of running both`() = runTest {
+        clearMocks(mockChecker, answers = false)             // forget setUp's scan, keep the stubs
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val model = DRMViewModel(mockChecker, dispatcher)   // init queued a scan, not yet run
+        model.loadDrmInfo()                                  // a second request before it ran
+        assertTrue(model.uiState.value.isLoading)
+        advanceUntilIdle()
+        // One scan's worth of probing, and its results are what the screen shows.
+        verify(exactly = 1) { mockChecker.checkWidevineSupport() }
+        verify(exactly = 1) { mockChecker.checkPrimeTimeSupport() }
+        assertFalse(model.uiState.value.isLoading)
+        assertEquals(5, model.uiState.value.drmEntries.size)
     }
 
     @Test

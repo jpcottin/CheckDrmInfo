@@ -8,6 +8,7 @@ import com.example.checkdrminfo.model.DrmInfoState
 import com.example.checkdrminfo.model.DrmResult
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -30,17 +31,25 @@ class DRMViewModel(
         "PrimeTime" to drmChecker::checkPrimeTimeSupport,
     )
 
+    // Declared before init: a property initializer below the init block would run after it
+    // and wipe the job the first scan stored.
+    private var loadJob: Job? = null
+
     init {
         loadDrmInfo()
     }
 
     fun loadDrmInfo() {
+        // One scan at a time: a scan still running when a new one starts would
+        // publish its (older) results over the new placeholders, or flip
+        // isLoading off while the new scan is still probing the plugins.
+        loadJob?.cancel()
         _uiState.value = DrmInfoState(
             drmEntries = drmChecks.map { (name, _) -> DrmEntry(name, DrmResult.Loading) },
             deviceInfo = DeviceInfo(),
             isLoading = true,
         )
-        viewModelScope.launch(ioDispatcher) {
+        loadJob = viewModelScope.launch(ioDispatcher) {
             val results = drmChecks
                 .map { (name, check) -> async { DrmEntry(name, check()) } }
                 .map { it.await() }

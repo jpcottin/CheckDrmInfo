@@ -24,14 +24,20 @@ class DRMChecker(
         val PRIMETIME_UUID: UUID = UUID.fromString("F239E769-EFA3-4850-9C16-A903C6932EFB")
     }
 
+    /** A blank property (some CDMs return "" for vendor or version) reads like a failed query. */
+    private fun String.orNa(): String = ifBlank { "N/A" }
+
     fun checkWidevineSupport(): DrmResult = checkDrmSupport(WIDEVINE_UUID, "Widevine") { drm ->
-        val level = drm.getPropertyString("securityLevel")
-        val hdcp = runCatching { drm.getPropertyString("hdcpLevel") }.getOrDefault("N/A")
-        val vendor = runCatching { drm.getPropertyString("vendor") }.getOrDefault("N/A")
-        val version = runCatching { drm.getPropertyString("version") }.getOrDefault("N/A")
+        val level = drm.getPropertyString("securityLevel").orNa()
+        // hdcpLevel is the level negotiated with the displays connected right now;
+        // maxHdcpLevel is what the device can reach, which is what a check is for.
+        val hdcp = runCatching { drm.getPropertyString("hdcpLevel") }.getOrDefault("N/A").orNa()
+        val maxHdcp = runCatching { drm.getPropertyString("maxHdcpLevel") }.getOrDefault("N/A").orNa()
+        val vendor = runCatching { drm.getPropertyString("vendor") }.getOrDefault("N/A").orNa()
+        val version = runCatching { drm.getPropertyString("version") }.getOrDefault("N/A").orNa()
         buildString {
             appendLine("Security Level: $level (L1=${level.equals("L1", true)} L2=${level.equals("L2", true)} L3=${level.equals("L3", true)})")
-            appendLine("HDCP Level: $hdcp")
+            appendLine("HDCP Level: $hdcp (max $maxHdcp)")
             appendLine("Vendor: $vendor")
             append("CDM Version: $version")
         }

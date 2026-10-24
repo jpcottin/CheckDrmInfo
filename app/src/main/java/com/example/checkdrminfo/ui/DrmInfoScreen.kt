@@ -172,11 +172,12 @@ fun DrmInfoContentPhonePortraitPreview() {
     }
 }
 
-@Preview(name = "Phone — Landscape", showSystemUi = true, device = "spec:width=891dp,height=411dp")
+@Preview(name = "Phone — Landscape (two-pane)", showSystemUi = true, device = "spec:width=891dp,height=411dp")
 @Composable
 fun DrmInfoContentPhoneLandscapePreview() {
+    // 891 dp is wider than the compact class, so the screen itself goes two-pane here.
     CheckDrmInfoTheme {
-        DrmInfoContent(state = previewState, useTwoPane = false)
+        DrmInfoContent(state = previewState, useTwoPane = true)
     }
 }
 

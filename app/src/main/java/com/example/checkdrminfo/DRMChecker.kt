@@ -1,7 +1,6 @@
 package com.example.checkdrminfo
 
 import android.media.MediaDrm
-import android.media.MediaDrmException
 import android.util.Log
 import androidx.media3.common.C
 import com.example.checkdrminfo.model.DrmResult
@@ -63,16 +62,22 @@ class DRMChecker(
             DrmResult.NotSupported("$drmName is not supported on this device.")
         } else {
             mediaDrmFactory(uuid).use { drm ->
+                // The scheme is supported once its MediaDrm opened; a property query that fails
+                // (getPropertyString throws MediaDrm.MediaDrmStateException or
+                // IllegalArgumentException, not MediaDrmException) only costs the details.
                 val details = try {
                     additionalChecks(drm)
-                } catch (e: MediaDrmException) {
-                    "Error querying $drmName properties: ${e.message}"
+                } catch (e: Exception) {
+                    "Error querying $drmName properties: ${e.describe()}"
                 }
                 DrmResult.Supported(details)
             }
         }
     } catch (e: Exception) {
         Log.e(TAG, "Error checking $drmName support", e)
-        DrmResult.CheckError("Error checking $drmName: ${e.message}")
+        DrmResult.CheckError("Error checking $drmName: ${e.describe()}")
     }
+
+    /** The exception's message, or its class name when it carries none (never the word "null"). */
+    private fun Exception.describe(): String = message ?: javaClass.simpleName
 }

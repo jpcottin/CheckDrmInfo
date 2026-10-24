@@ -86,14 +86,16 @@ class DRMCheckerTest {
     @Test
     fun `checkWidevineSupport - property query failure is reported as Supported with the error`() {
         every { MediaDrm.isCryptoSchemeSupported(C.WIDEVINE_UUID) } returns true
-        every { mockDrm.getPropertyString("securityLevel") } throws MediaDrmException("vendor plugin busy")
+        // What getPropertyString throws on a device: MediaDrm.MediaDrmStateException is an
+        // IllegalStateException (MediaDrmException is reserved for opening the plugin).
+        every { mockDrm.getPropertyString("securityLevel") } throws IllegalStateException("vendor plugin busy")
 
         val result = checker.checkWidevineSupport()
         // The scheme is supported even if its properties cannot be read right now.
         assertTrue(result is DrmResult.Supported)
         val details = (result as DrmResult.Supported).details
-        // (The android.jar stub of MediaDrmException drops the message on the JVM, so only the prefix is checked.)
         assertTrue(details, details.startsWith("Error querying Widevine properties"))
+        assertTrue(details, details.contains("vendor plugin busy"))
         verify(exactly = 1) { mockDrm.close() }
     }
 
@@ -239,14 +241,27 @@ class DRMCheckerTest {
     }
 
     @Test
-    fun `a crash while reading properties is a CheckError and still releases the handle`() {
+    fun `a crash while reading properties keeps the scheme Supported and still releases the handle`() {
         every { MediaDrm.isCryptoSchemeSupported(C.WIDEVINE_UUID) } returns true
-        // Not a MediaDrmException: the property query itself is broken, not the plugin.
-        every { mockDrm.getPropertyString("securityLevel") } throws IllegalStateException("dead service")
+        // Any failure inside the property queries: the plugin opened, so the scheme is supported.
+        every { mockDrm.getPropertyString("securityLevel") } throws RuntimeException("dead service")
 
         val result = checker.checkWidevineSupport()
-        assertTrue(result is DrmResult.CheckError)
-        assertTrue((result as DrmResult.CheckError).message.startsWith("Error checking Widevine"))
+        assertTrue(result is DrmResult.Supported)
+        val details = (result as DrmResult.Supported).details
+        assertTrue(details, details.startsWith("Error querying Widevine properties"))
+        assertTrue(details, details.contains("dead service"))
         verify(exactly = 1) { mockDrm.close() }
+    }
+
+    @Test
+    fun `an exception without a message is named by its class, never as null`() {
+        val failing = DRMChecker(mediaDrmFactory = { throw IllegalStateException() })
+        every { MediaDrm.isCryptoSchemeSupported(DRMChecker.MARLIN_UUID) } returns true
+
+        val result = failing.checkMarlinSupport()
+        assertTrue(result is DrmResult.CheckError)
+        val message = (result as DrmResult.CheckError).message
+        assertEquals("Error checking Marlin: IllegalStateException", message)
     }
 }

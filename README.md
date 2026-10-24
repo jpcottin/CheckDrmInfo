@@ -70,7 +70,7 @@ Pixel 8 Pro — Android 16 (SDK 36):
 
 ## Architecture
 
-The project was refactored from a single 450-line `MainActivity` into a layered structure:
+The project was refactored from a single-activity app into a layered structure:
 
 ```
 app/src/main/java/com/example/checkdrminfo/
@@ -120,8 +120,8 @@ Run instrumented tests (device or emulator required):
 ```
 
 Three workflows run on GitHub Actions: `ci.yml` (debug build, unit tests, screenshot
-validation and lint on every push and pull request, with the `unit-test-results`,
-`screenshot-test-report` and `lint-report` artifacts), `instrumented-tests.yml` (the emulator
+validation and lint on every push and pull request, with the `unit-test-results` and
+`lint-report` artifacts, plus `screenshot-test-report` when the validation fails), `instrumented-tests.yml` (the emulator
 matrix described above) and `release.yml` (`assembleRelease` plus a GitHub release on a
 version tag).
 

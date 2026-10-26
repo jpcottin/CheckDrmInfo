@@ -58,6 +58,11 @@ For Widevine, the app additionally reports:
 - CDM vendor string
 - CDM version
 
+Any other DRM plugin the platform reports (`MediaDrm.getSupportedCryptoSchemes`) is listed after
+the five above, named by the plugin's description with its UUID, vendor and CDM version, so a
+vendor scheme outside the table still shows up. On a Google APIs emulator this surfaces the
+Widevine plugin's legacy UUID and the common-encryption UUID the ClearKey plugin answers to.
+
 ## Screenshots
 
 Pixel 8 Pro — Android 16 (SDK 36):
@@ -103,8 +108,8 @@ app/src/main/java/com/example/checkdrminfo/
 
 | Suite | Count | Notes |
 |---|---|---|
-| `DRMCheckerTest` | 26 | All 5 DRM systems × not-supported / exception / supported; Widevine security level, current and maximum HDCP level and version details, property-query failures (the scheme stays supported, the details carry the error), N/A fallbacks for failed and blank properties; the MediaDrm handle (not opened for an unsupported scheme, a failing constructor reported by name, released even when a property read crashes); a message-less exception named by its class |
-| `DRMViewModelTest` | 16 | `MainDispatcherRule` + `kotlinx-coroutines-test`; shareable report layout and the still-checking marker; the loading placeholders and the declared entry order; one scan at a time |
+| `DRMCheckerTest` | 31 | All 5 DRM systems × not-supported / exception / supported; Widevine security level, current and maximum HDCP level and version details, property-query failures (the scheme stays supported, the details carry the error), N/A fallbacks for failed and blank properties; the MediaDrm handle (not opened for an unsupported scheme, a failing constructor reported by name, released even when a property read crashes); a message-less exception named by its class; the other schemes the platform lists (named schemes skipped, description/vendor/version, UUID fallback, a plugin that fails to open, a failing listing) |
+| `DRMViewModelTest` | 18 | `MainDispatcherRule` + `kotlinx-coroutines-test`; shareable report layout and the still-checking marker; the loading placeholders and the declared entry order; one scan at a time; a discovered scheme listed after the named ones and in the report |
 | `DeviceInfoTest` | 3 | `DeviceInfo` default-value safety |
 | `PreviewScreenshotTests` (screenshot) | 4 | Compose Preview screenshot tests, `validateDebugScreenshotTest` against the recorded references |
 | `DrmUiTest` (instrumented) | 9 | Compose UI tests for all component states |

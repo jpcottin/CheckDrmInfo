@@ -1,5 +1,6 @@
 package com.example.checkdrminfo
 
+import com.example.checkdrminfo.model.DrmEntry
 import com.example.checkdrminfo.model.DrmResult
 import io.mockk.clearMocks
 import io.mockk.every
@@ -36,6 +37,7 @@ class DRMViewModelTest {
         every { mockChecker.checkPlayReadySupport() }  returns DrmResult.NotSupported("Not supported")
         every { mockChecker.checkMarlinSupport() }     returns DrmResult.NotSupported("Not supported")
         every { mockChecker.checkPrimeTimeSupport() }  returns DrmResult.CheckError("Init failed")
+        every { mockChecker.discoverOtherSchemes() }   returns emptyList()
         viewModel = DRMViewModel(mockChecker, UnconfinedTestDispatcher())
     }
 
@@ -183,5 +185,31 @@ class DRMViewModelTest {
         val after = pending.uiState.value
         assertFalse(after.isLoading)
         assertTrue(after.drmEntries.none { it.result is DrmResult.Loading })
+    }
+
+    @Test
+    fun `a scheme the named checks do not cover is listed after them`() = runTest {
+        every { mockChecker.discoverOtherSchemes() } returns listOf(
+            DrmEntry("Acme DRM", DrmResult.Supported("Vendor: Acme")),
+        )
+        val model = DRMViewModel(mockChecker, StandardTestDispatcher(testScheduler))
+        // The placeholders only cover the named schemes: the others are unknown until probed.
+        assertEquals(5, model.uiState.value.drmEntries.size)
+
+        advanceUntilIdle()
+        val names = model.uiState.value.drmEntries.map { it.name }
+        assertEquals(listOf("Widevine", "ClearKey", "PlayReady", "Marlin", "PrimeTime", "Acme DRM"), names)
+        assertFalse(model.uiState.value.isLoading)
+    }
+
+    @Test
+    fun `shareable report includes a discovered scheme`() = runTest {
+        every { mockChecker.discoverOtherSchemes() } returns listOf(
+            DrmEntry("Acme DRM", DrmResult.Supported("UUID: 0e0e\nVendor: Acme")),
+        )
+        val model = DRMViewModel(mockChecker, UnconfinedTestDispatcher())
+        val report = model.getShareableReport()
+        assertTrue(report, report.contains("  [+] Acme DRM: Supported"))
+        assertTrue(report, report.contains("      Vendor: Acme"))
     }
 }

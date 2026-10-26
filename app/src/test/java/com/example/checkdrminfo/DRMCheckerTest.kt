@@ -289,4 +289,64 @@ class DRMCheckerTest {
         val message = (result as DrmResult.CheckError).message
         assertEquals("Error checking Marlin: IllegalStateException", message)
     }
+
+    // ── Other schemes ─────────────────────────────────────────────────────────
+
+    private val acmeUuid: UUID = UUID.fromString("0E0E0E0E-0E0E-0E0E-0E0E-0E0E0E0E0E0E")
+
+    @Test
+    fun `discoverOtherSchemes - the five named schemes are not listed again`() {
+        every { MediaDrm.getSupportedCryptoSchemes() } returns listOf(
+            C.WIDEVINE_UUID, C.CLEARKEY_UUID, C.PLAYREADY_UUID, DRMChecker.MARLIN_UUID, DRMChecker.PRIMETIME_UUID,
+        )
+        assertTrue(checker.discoverOtherSchemes().isEmpty())
+        verify(exactly = 0) { mockDrm.close() }
+    }
+
+    @Test
+    fun `discoverOtherSchemes - an unlisted plugin is named by its description with vendor and version`() {
+        every { MediaDrm.getSupportedCryptoSchemes() } returns listOf(C.WIDEVINE_UUID, acmeUuid, acmeUuid)
+        every { mockDrm.getPropertyString("description") } returns "Acme DRM"
+        every { mockDrm.getPropertyString("vendor") } returns "Acme"
+        every { mockDrm.getPropertyString("version") } returns "2.1"
+
+        val entries = checker.discoverOtherSchemes()
+        assertEquals(1, entries.size)
+        assertEquals("Acme DRM", entries[0].name)
+        val details = (entries[0].result as DrmResult.Supported).details
+        assertEquals("UUID: $acmeUuid\nVendor: Acme\nCDM Version: 2.1", details)
+        verify(exactly = 1) { mockDrm.close() }
+    }
+
+    @Test
+    fun `discoverOtherSchemes - a plugin without a description is named by its UUID`() {
+        every { MediaDrm.getSupportedCryptoSchemes() } returns listOf(acmeUuid)
+        every { mockDrm.getPropertyString("description") } returns ""
+        every { mockDrm.getPropertyString("vendor") } throws IllegalArgumentException("no such property")
+        every { mockDrm.getPropertyString("version") } returns "  "
+
+        val entries = checker.discoverOtherSchemes()
+        assertEquals(acmeUuid.toString(), entries[0].name)
+        val details = (entries[0].result as DrmResult.Supported).details
+        assertTrue(details, details.contains("Vendor: N/A"))
+        assertTrue(details, details.contains("CDM Version: N/A"))
+    }
+
+    @Test
+    fun `discoverOtherSchemes - a plugin that fails to open is reported, not dropped`() {
+        val failing = DRMChecker(mediaDrmFactory = { throw RuntimeException("no plugin") })
+        every { MediaDrm.getSupportedCryptoSchemes() } returns listOf(acmeUuid)
+
+        val entries = failing.discoverOtherSchemes()
+        assertEquals(1, entries.size)
+        assertEquals(acmeUuid.toString(), entries[0].name)
+        val message = (entries[0].result as DrmResult.CheckError).message
+        assertEquals("Error opening $acmeUuid: no plugin", message)
+    }
+
+    @Test
+    fun `discoverOtherSchemes - a failing listing yields no entries`() {
+        every { MediaDrm.getSupportedCryptoSchemes() } throws RuntimeException("drm service down")
+        assertTrue(checker.discoverOtherSchemes().isEmpty())
+    }
 }

@@ -50,12 +50,15 @@ class DRMViewModel(
             isLoading = true,
         )
         loadJob = viewModelScope.launch(ioDispatcher) {
+            // The platform's own scheme list runs alongside the named checks and is
+            // appended after them, so the five named rows keep their place.
+            val others = async { drmChecker.discoverOtherSchemes() }
             val results = drmChecks
                 .map { (name, check) -> async { DrmEntry(name, check()) } }
                 .map { it.await() }
 
             _uiState.value = DrmInfoState(
-                drmEntries = results,
+                drmEntries = results + others.await(),
                 deviceInfo = DeviceInfo(),
                 isLoading = false,
             )

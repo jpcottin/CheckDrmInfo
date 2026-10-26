@@ -3,6 +3,7 @@ package com.example.checkdrminfo
 import android.media.MediaDrm
 import android.util.Log
 import androidx.media3.common.C
+import com.example.checkdrminfo.model.DrmEntry
 import com.example.checkdrminfo.model.DrmResult
 import java.util.UUID
 
@@ -22,6 +23,11 @@ class DRMChecker(
 
         // Adobe PrimeTime: used in US broadcast streaming
         val PRIMETIME_UUID: UUID = UUID.fromString("F239E769-EFA3-4850-9C16-A903C6932EFB")
+
+        /** The schemes the named checks above already cover. */
+        val NAMED_UUIDS: Set<UUID> = setOf(
+            WIDEVINE_UUID, CLEARKEY_UUID, PLAYREADY_UUID, MARLIN_UUID, PRIMETIME_UUID,
+        )
     }
 
     /** A blank property (some CDMs return "" for vendor or version) reads like a failed query. */
@@ -82,6 +88,38 @@ class DRMChecker(
     } catch (e: Exception) {
         Log.e(TAG, "Error checking $drmName support", e)
         DrmResult.CheckError("Error checking $drmName: ${e.describe()}")
+    }
+
+    /**
+     * Every crypto scheme the platform reports that the named checks do not cover, so a
+     * vendor plugin outside that list still shows up. Each one is named by its plugin
+     * description (the UUID when the plugin has none) and carries the vendor and version
+     * every MediaDrm plugin exposes. A listing that fails yields no entries rather than
+     * an error: the named checks have already reported what they could.
+     */
+    fun discoverOtherSchemes(): List<DrmEntry> = try {
+        MediaDrm.getSupportedCryptoSchemes()
+            .filterNot { it in NAMED_UUIDS }
+            .distinct()
+            .map(::describeScheme)
+    } catch (e: Exception) {
+        Log.e(TAG, "Error listing the supported crypto schemes", e)
+        emptyList()
+    }
+
+    private fun describeScheme(uuid: UUID): DrmEntry = try {
+        mediaDrmFactory(uuid).use { drm ->
+            val description = runCatching { drm.getPropertyString(MediaDrm.PROPERTY_DESCRIPTION) }.getOrDefault("")
+            val vendor = runCatching { drm.getPropertyString(MediaDrm.PROPERTY_VENDOR) }.getOrDefault("N/A").orNa()
+            val version = runCatching { drm.getPropertyString(MediaDrm.PROPERTY_VERSION) }.getOrDefault("N/A").orNa()
+            DrmEntry(
+                name = description.ifBlank { uuid.toString() },
+                result = DrmResult.Supported("UUID: $uuid\nVendor: $vendor\nCDM Version: $version"),
+            )
+        }
+    } catch (e: Exception) {
+        Log.e(TAG, "Error opening the $uuid plugin", e)
+        DrmEntry(uuid.toString(), DrmResult.CheckError("Error opening $uuid: ${e.describe()}"))
     }
 
     /** The exception's message, or its class name when it carries none (never the word "null"). */

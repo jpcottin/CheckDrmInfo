@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -42,7 +43,6 @@ import com.example.checkdrminfo.ui.theme.CheckDrmInfoTheme
 
 // ── Screen (stateful entry point) ─────────────────────────────────────────────
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DrmInfoScreen(
     modifier: Modifier = Modifier,
@@ -53,12 +53,40 @@ fun DrmInfoScreen(
     val windowSizeClass = currentWindowAdaptiveInfo().windowSizeClass
     val useTwoPane = windowSizeClass.windowWidthSizeClass != WindowWidthSizeClass.COMPACT
 
+    DrmInfoScaffold(
+        state = uiState,
+        useTwoPane = useTwoPane,
+        onRescan = viewModel::loadDrmInfo,
+        onShare = { shareReport(context, viewModel.getShareableReport()) },
+        modifier = modifier,
+    )
+}
+
+// ── Scaffold (stateless — app bar actions and the content below it) ───────────
+
+/**
+ * The app bar and the content it sits above. The rescan action probes the DRM systems again:
+ * the HDCP level follows the displays connected at the time of the scan, so plugging a
+ * screen in (or unplugging it) is otherwise only reflected by relaunching the app.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DrmInfoScaffold(
+    state: DrmInfoState,
+    useTwoPane: Boolean,
+    onRescan: () -> Unit,
+    onShare: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("DRM Check") },
                 actions = {
-                    IconButton(onClick = { shareReport(context, viewModel.getShareableReport()) }) {
+                    IconButton(onClick = onRescan) {
+                        Icon(Icons.Default.Refresh, contentDescription = "Rescan DRM systems")
+                    }
+                    IconButton(onClick = onShare) {
                         Icon(Icons.Default.Share, contentDescription = "Share DRM report")
                     }
                 },
@@ -67,7 +95,7 @@ fun DrmInfoScreen(
         modifier = modifier.fillMaxSize(),
     ) { innerPadding ->
         DrmInfoContent(
-            state = uiState,
+            state = state,
             useTwoPane = useTwoPane,
             modifier = Modifier.padding(innerPadding),
         )

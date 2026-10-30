@@ -90,6 +90,26 @@ class DRMViewModelTest {
     }
 
     @Test
+    fun `a rescan shows the placeholders again until the new results are in`() = runTest {
+        clearMocks(mockChecker, answers = false)
+        val model = DRMViewModel(mockChecker, StandardTestDispatcher(testScheduler))
+        advanceUntilIdle()
+        assertFalse(model.uiState.value.isLoading)
+
+        model.loadDrmInfo()
+        val rescanning = model.uiState.value
+        assertTrue(rescanning.isLoading)
+        assertTrue(rescanning.drmEntries.all { it.result is DrmResult.Loading })
+
+        advanceUntilIdle()
+        val after = model.uiState.value
+        assertFalse(after.isLoading)
+        assertTrue(after.drmEntries.none { it.result is DrmResult.Loading })
+        verify(exactly = 2) { mockChecker.checkWidevineSupport() }
+        verify(exactly = 2) { mockChecker.discoverOtherSchemes() }
+    }
+
+    @Test
     fun `a scan requested while one is pending replaces it instead of running both`() = runTest {
         clearMocks(mockChecker, answers = false)             // forget setUp's scan, keep the stubs
         val dispatcher = StandardTestDispatcher(testScheduler)

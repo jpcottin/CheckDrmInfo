@@ -4,6 +4,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
 import com.example.checkdrminfo.model.DeviceInfo
@@ -13,7 +14,9 @@ import com.example.checkdrminfo.model.DrmResult
 import com.example.checkdrminfo.ui.DeviceInfoSection
 import com.example.checkdrminfo.ui.DrmCheckItem
 import com.example.checkdrminfo.ui.DrmInfoContent
+import com.example.checkdrminfo.ui.DrmInfoScaffold
 import com.example.checkdrminfo.ui.theme.CheckDrmInfoTheme
+import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 
@@ -88,6 +91,41 @@ class DrmUiTest {
         }
         composeTestRule.onNodeWithText("Widevine").assertIsDisplayed()
         composeTestRule.onAllNodesWithText("Checking…").onFirst().assertIsDisplayed()
+    }
+
+    // ── DrmInfoScaffold ───────────────────────────────────────────────────────
+
+    @Test
+    fun drmInfoScaffold_showsTheAppBarActionsAboveTheContent() {
+        composeTestRule.setContent {
+            CheckDrmInfoTheme {
+                DrmInfoScaffold(state = fakeState, useTwoPane = false, onRescan = {}, onShare = {})
+            }
+        }
+        composeTestRule.onNodeWithText("DRM Check").assertIsDisplayed()
+        composeTestRule.onNodeWithContentDescription("Rescan DRM systems").assertIsDisplayed()
+        composeTestRule.onNodeWithContentDescription("Share DRM report").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Widevine").assertIsDisplayed()
+    }
+
+    @Test
+    fun drmInfoScaffold_rescanAction_asksForANewScan() {
+        var rescans = 0
+        var shares = 0
+        composeTestRule.setContent {
+            CheckDrmInfoTheme {
+                DrmInfoScaffold(
+                    state = fakeState,
+                    useTwoPane = false,
+                    onRescan = { rescans++ },
+                    onShare = { shares++ },
+                )
+            }
+        }
+        composeTestRule.onNodeWithContentDescription("Rescan DRM systems").performClick()
+        composeTestRule.waitForIdle()
+        assertEquals(1, rescans)
+        assertEquals(0, shares)
     }
 
     // ── DrmCheckItem ──────────────────────────────────────────────────────────

@@ -58,6 +58,10 @@ For Widevine, the app additionally reports:
 - CDM vendor string
 - CDM version
 
+The app scans once at launch; the **rescan** action in the app bar probes everything again.
+The HDCP level follows the displays connected at the time of the scan, so rescan after plugging
+a screen in (or unplugging it) instead of relaunching the app.
+
 Any other DRM plugin the platform reports (`MediaDrm.getSupportedCryptoSchemes`) is listed after
 the five above, named by the plugin's description with its UUID, vendor and CDM version, so a
 vendor scheme outside the table still shows up. On a Google APIs emulator this surfaces the
@@ -86,7 +90,7 @@ app/src/main/java/com/example/checkdrminfo/
 │   └── DrmInfo.kt               # DrmResult sealed class, DrmEntry, DrmInfoState, DeviceInfo
 └── ui/
     ├── DrmComponents.kt         # Stateless composables + previews
-    └── DrmInfoScreen.kt         # Adaptive layout + screen-level previews
+    └── DrmInfoScreen.kt         # App bar actions (rescan, share), adaptive layout + screen-level previews
 ```
 
 ### Adaptive layout
@@ -109,10 +113,10 @@ app/src/main/java/com/example/checkdrminfo/
 | Suite | Count | Notes |
 |---|---|---|
 | `DRMCheckerTest` | 31 | All 5 DRM systems × not-supported / exception / supported; Widevine security level, current and maximum HDCP level and version details, property-query failures (the scheme stays supported, the details carry the error), N/A fallbacks for failed and blank properties; the MediaDrm handle (not opened for an unsupported scheme, a failing constructor reported by name, released even when a property read crashes); a message-less exception named by its class; the other schemes the platform lists (named schemes skipped, description/vendor/version, UUID fallback, a plugin that fails to open, a failing listing) |
-| `DRMViewModelTest` | 18 | `MainDispatcherRule` + `kotlinx-coroutines-test`; shareable report layout and the still-checking marker; the loading placeholders and the declared entry order; one scan at a time; a discovered scheme listed after the named ones and in the report |
+| `DRMViewModelTest` | 19 | `MainDispatcherRule` + `kotlinx-coroutines-test`; shareable report layout and the still-checking marker; the loading placeholders and the declared entry order; one scan at a time, and a rescan shows the placeholders again until its results are in; a discovered scheme listed after the named ones and in the report |
 | `DeviceInfoTest` | 3 | `DeviceInfo` default-value safety |
 | `PreviewScreenshotTests` (screenshot) | 4 | Compose Preview screenshot tests, `validateDebugScreenshotTest` against the recorded references |
-| `DrmUiTest` (instrumented) | 9 | Compose UI tests for all component states |
+| `DrmUiTest` (instrumented) | 11 | Compose UI tests for all component states, and the app bar actions (rescan asks for a new scan) |
 
 Run unit tests:
 ```

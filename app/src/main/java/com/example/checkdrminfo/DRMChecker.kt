@@ -41,11 +41,18 @@ class DRMChecker(
         val maxHdcp = runCatching { drm.getPropertyString("maxHdcpLevel") }.getOrDefault("N/A").orNa()
         val vendor = runCatching { drm.getPropertyString("vendor") }.getOrDefault("N/A").orNa()
         val version = runCatching { drm.getPropertyString("version") }.getOrDefault("N/A").orNa()
+        // The system ID names the OEMCrypto build the keys are provisioned for: it is what
+        // a service's device list allows or revokes, so a check that stops at "L1" leaves
+        // out the one number support asks for. The OEMCrypto API version dates that build.
+        val systemId = runCatching { drm.getPropertyString("systemId") }.getOrDefault("N/A").orNa()
+        val oemCrypto = runCatching { drm.getPropertyString("oemCryptoApiVersion") }.getOrDefault("N/A").orNa()
         buildString {
             appendLine("Security Level: $level (L1=${level.equals("L1", true)} L2=${level.equals("L2", true)} L3=${level.equals("L3", true)})")
             appendLine("HDCP Level: $hdcp (max $maxHdcp)")
             appendLine("Vendor: $vendor")
-            append("CDM Version: $version")
+            appendLine("CDM Version: $version")
+            appendLine("System ID: $systemId")
+            append("OEMCrypto API: $oemCrypto")
         }
     }
 

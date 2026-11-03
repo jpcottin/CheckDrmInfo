@@ -144,6 +144,32 @@ class DRMCheckerTest {
     }
 
     @Test
+    fun `checkWidevineSupport - the system ID and OEMCrypto API version are reported`() {
+        every { MediaDrm.isCryptoSchemeSupported(C.WIDEVINE_UUID) } returns true
+        every { mockDrm.getPropertyString("securityLevel") }       returns "L1"
+        every { mockDrm.getPropertyString("systemId") }            returns "7371"
+        every { mockDrm.getPropertyString("oemCryptoApiVersion") } returns "17"
+
+        val details = (checker.checkWidevineSupport() as DrmResult.Supported).details
+        assertTrue(details, details.contains("System ID: 7371"))
+        assertTrue(details, details.contains("OEMCrypto API: 17"))
+    }
+
+    @Test
+    fun `checkWidevineSupport - a system ID the CDM withholds reads N-A and costs nothing else`() {
+        every { MediaDrm.isCryptoSchemeSupported(C.WIDEVINE_UUID) } returns true
+        every { mockDrm.getPropertyString("securityLevel") }       returns "L3"
+        every { mockDrm.getPropertyString("version") }             returns "16.0"
+        every { mockDrm.getPropertyString("systemId") }            throws IllegalArgumentException("no systemId")
+        every { mockDrm.getPropertyString("oemCryptoApiVersion") } returns ""
+
+        val details = (checker.checkWidevineSupport() as DrmResult.Supported).details
+        assertTrue(details, details.contains("CDM Version: 16.0"))
+        assertTrue(details, details.contains("System ID: N/A"))
+        assertTrue(details, details.contains("OEMCrypto API: N/A"))
+    }
+
+    @Test
     fun `checkClearKeySupport - not supported returns NotSupported`() {
         every { MediaDrm.isCryptoSchemeSupported(C.CLEARKEY_UUID) } returns false
         assertTrue(checker.checkClearKeySupport() is DrmResult.NotSupported)

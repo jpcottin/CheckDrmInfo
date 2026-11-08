@@ -60,6 +60,8 @@ For Widevine, the app additionally reports:
 - System ID (the OEMCrypto build the keys are provisioned for, the number a service's device list allows or revokes)
 - OEMCrypto API version
 
+Every other scheme found present reports its CDM vendor and version.
+
 The app scans once at launch; the **rescan** action in the app bar probes everything again.
 The HDCP level follows the displays connected at the time of the scan, so rescan after plugging
 a screen in (or unplugging it) instead of relaunching the app.
@@ -76,7 +78,7 @@ Pixel 8 Pro — Android 16 (SDK 36):
 <img src="docs/screenshot_pixel8pro.png" width="320" alt="CheckDrmInfo on Pixel 8 Pro"/>
 
 - Widevine L1, HDCP level reflects connected output (Disconnected when no HDMI)
-- ClearKey present (standard on all Android devices)
+- ClearKey present (standard on all Android devices), with its vendor and CDM version
 - PlayReady, Marlin, PrimeTime not supported (expected on stock Google devices)
 
 ## Architecture
@@ -114,7 +116,7 @@ app/src/main/java/com/example/checkdrminfo/
 
 | Suite | Count | Notes |
 |---|---|---|
-| `DRMCheckerTest` | 33 | All 5 DRM systems × not-supported / exception / supported; Widevine security level, current and maximum HDCP level, version, system ID and OEMCrypto API version details, property-query failures (the scheme stays supported, the details carry the error), N/A fallbacks for failed and blank properties; the MediaDrm handle (not opened for an unsupported scheme, a failing constructor reported by name, released even when a property read crashes); a message-less exception named by its class; the other schemes the platform lists (named schemes skipped, description/vendor/version, UUID fallback, a plugin that fails to open, a failing listing) |
+| `DRMCheckerTest` | 34 | All 5 DRM systems × not-supported / exception / supported (the vendor and version of each present plugin, N/A when withheld); Widevine security level, current and maximum HDCP level, version, system ID and OEMCrypto API version details, property-query failures (the scheme stays supported, the details carry the error), N/A fallbacks for failed and blank properties; the MediaDrm handle (not opened for an unsupported scheme, a failing constructor reported by name, released even when a property read crashes); a message-less exception named by its class; the other schemes the platform lists (named schemes skipped, description/vendor/version, UUID fallback, a plugin that fails to open, a failing listing) |
 | `DRMViewModelTest` | 19 | `MainDispatcherRule` + `kotlinx-coroutines-test`; shareable report layout and the still-checking marker; the loading placeholders and the declared entry order; one scan at a time, and a rescan shows the placeholders again until its results are in; a discovered scheme listed after the named ones and in the report |
 | `DeviceInfoTest` | 3 | `DeviceInfo` default-value safety |
 | `PreviewScreenshotTests` (screenshot) | 4 | Compose Preview screenshot tests, `validateDebugScreenshotTest` against the recorded references |

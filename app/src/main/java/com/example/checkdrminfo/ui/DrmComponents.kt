@@ -149,7 +149,7 @@ private val sampleDevice = DeviceInfo(
 class DrmEntryPreviewProvider : PreviewParameterProvider<DrmEntry> {
     override val values = sequenceOf(
         DrmEntry("Widevine", DrmResult.Supported("Security Level: L1 (L1=true L2=false L3=false)\nHDCP Level: HW_SECURE_ALL\nVendor: Google\nCDM Version: 16.0.0")),
-        DrmEntry("ClearKey", DrmResult.Supported("ClearKey CDM present")),
+        DrmEntry("ClearKey", DrmResult.Supported("Vendor: Google\nCDM Version: 1.2")),
         DrmEntry("PlayReady", DrmResult.NotSupported("PlayReady is not supported on this device.")),
         DrmEntry("Marlin", DrmResult.NotSupported("Marlin is not supported on this device.")),
         DrmEntry("PrimeTime", DrmResult.CheckError("Error checking PrimeTime: initialization failed")),

@@ -182,9 +182,14 @@ class DRMCheckerTest {
     }
 
     @Test
-    fun `checkClearKeySupport - supported returns Supported`() {
+    fun `checkClearKeySupport - supported reports the plugin's vendor and version`() {
         every { MediaDrm.isCryptoSchemeSupported(C.CLEARKEY_UUID) } returns true
-        assertTrue(checker.checkClearKeySupport() is DrmResult.Supported)
+        every { mockDrm.getPropertyString("vendor") } returns "ClearKey Co"
+        every { mockDrm.getPropertyString("version") } returns "3.4"
+        val result = checker.checkClearKeySupport()
+        assertTrue(result is DrmResult.Supported)
+        assertEquals("Vendor: ClearKey Co\nCDM Version: 3.4", (result as DrmResult.Supported).details)
+        verify(exactly = 1) { mockDrm.close() }
     }
 
     // ── PlayReady ─────────────────────────────────────────────────────────────
@@ -202,9 +207,14 @@ class DRMCheckerTest {
     }
 
     @Test
-    fun `checkPlayReadySupport - supported returns Supported`() {
+    fun `checkPlayReadySupport - supported reports the plugin's vendor and version`() {
         every { MediaDrm.isCryptoSchemeSupported(C.PLAYREADY_UUID) } returns true
-        assertTrue(checker.checkPlayReadySupport() is DrmResult.Supported)
+        every { mockDrm.getPropertyString("vendor") } returns "PlayReady Co"
+        every { mockDrm.getPropertyString("version") } returns "3.4"
+        val result = checker.checkPlayReadySupport()
+        assertTrue(result is DrmResult.Supported)
+        assertEquals("Vendor: PlayReady Co\nCDM Version: 3.4", (result as DrmResult.Supported).details)
+        verify(exactly = 1) { mockDrm.close() }
     }
 
     // ── Marlin ────────────────────────────────────────────────────────────────
@@ -222,9 +232,14 @@ class DRMCheckerTest {
     }
 
     @Test
-    fun `checkMarlinSupport - supported returns Supported`() {
+    fun `checkMarlinSupport - supported reports the plugin's vendor and version`() {
         every { MediaDrm.isCryptoSchemeSupported(DRMChecker.MARLIN_UUID) } returns true
-        assertTrue(checker.checkMarlinSupport() is DrmResult.Supported)
+        every { mockDrm.getPropertyString("vendor") } returns "Marlin Co"
+        every { mockDrm.getPropertyString("version") } returns "3.4"
+        val result = checker.checkMarlinSupport()
+        assertTrue(result is DrmResult.Supported)
+        assertEquals("Vendor: Marlin Co\nCDM Version: 3.4", (result as DrmResult.Supported).details)
+        verify(exactly = 1) { mockDrm.close() }
     }
 
     // ── PrimeTime ─────────────────────────────────────────────────────────────
@@ -242,9 +257,23 @@ class DRMCheckerTest {
     }
 
     @Test
-    fun `checkPrimeTimeSupport - supported returns Supported`() {
+    fun `checkPrimeTimeSupport - supported reports the plugin's vendor and version`() {
         every { MediaDrm.isCryptoSchemeSupported(DRMChecker.PRIMETIME_UUID) } returns true
-        assertTrue(checker.checkPrimeTimeSupport() is DrmResult.Supported)
+        every { mockDrm.getPropertyString("vendor") } returns "PrimeTime Co"
+        every { mockDrm.getPropertyString("version") } returns "3.4"
+        val result = checker.checkPrimeTimeSupport()
+        assertTrue(result is DrmResult.Supported)
+        assertEquals("Vendor: PrimeTime Co\nCDM Version: 3.4", (result as DrmResult.Supported).details)
+        verify(exactly = 1) { mockDrm.close() }
+    }
+
+    @Test
+    fun `a named scheme whose plugin withholds vendor and version reads N-A and stays Supported`() {
+        every { MediaDrm.isCryptoSchemeSupported(C.CLEARKEY_UUID) } returns true
+        every { mockDrm.getPropertyString("vendor") } throws IllegalArgumentException("no such property")
+        every { mockDrm.getPropertyString("version") } returns ""
+        val result = checker.checkClearKeySupport()
+        assertEquals("Vendor: N/A\nCDM Version: N/A", (result as DrmResult.Supported).details)
     }
 
     // ── Generic checkDrmSupport ───────────────────────────────────────────────

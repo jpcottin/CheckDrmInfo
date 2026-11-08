@@ -56,20 +56,21 @@ class DRMChecker(
         }
     }
 
-    fun checkClearKeySupport(): DrmResult = checkDrmSupport(CLEARKEY_UUID, "ClearKey") {
-        "ClearKey CDM present"
-    }
+    // The other named schemes carry the vendor and version every MediaDrm plugin
+    // exposes: "present" alone does not say whose CDM answered, or how old it is.
+    fun checkClearKeySupport(): DrmResult = checkDrmSupport(CLEARKEY_UUID, "ClearKey") { it.vendorAndVersion() }
 
-    fun checkPlayReadySupport(): DrmResult = checkDrmSupport(PLAYREADY_UUID, "PlayReady") {
-        "PlayReady CDM present"
-    }
+    fun checkPlayReadySupport(): DrmResult = checkDrmSupport(PLAYREADY_UUID, "PlayReady") { it.vendorAndVersion() }
 
-    fun checkMarlinSupport(): DrmResult = checkDrmSupport(MARLIN_UUID, "Marlin") {
-        "Marlin CDM present"
-    }
+    fun checkMarlinSupport(): DrmResult = checkDrmSupport(MARLIN_UUID, "Marlin") { it.vendorAndVersion() }
 
-    fun checkPrimeTimeSupport(): DrmResult = checkDrmSupport(PRIMETIME_UUID, "PrimeTime") {
-        "Adobe PrimeTime CDM present"
+    fun checkPrimeTimeSupport(): DrmResult = checkDrmSupport(PRIMETIME_UUID, "PrimeTime") { it.vendorAndVersion() }
+
+    /** The plugin's vendor and version lines; a read that fails or comes back blank reads N/A. */
+    private fun MediaDrm.vendorAndVersion(): String {
+        val vendor = runCatching { getPropertyString(MediaDrm.PROPERTY_VENDOR) }.getOrDefault("N/A").orNa()
+        val version = runCatching { getPropertyString(MediaDrm.PROPERTY_VERSION) }.getOrDefault("N/A").orNa()
+        return "Vendor: $vendor\nCDM Version: $version"
     }
 
     fun checkDrmSupport(
@@ -117,11 +118,9 @@ class DRMChecker(
     private fun describeScheme(uuid: UUID): DrmEntry = try {
         mediaDrmFactory(uuid).use { drm ->
             val description = runCatching { drm.getPropertyString(MediaDrm.PROPERTY_DESCRIPTION) }.getOrDefault("")
-            val vendor = runCatching { drm.getPropertyString(MediaDrm.PROPERTY_VENDOR) }.getOrDefault("N/A").orNa()
-            val version = runCatching { drm.getPropertyString(MediaDrm.PROPERTY_VERSION) }.getOrDefault("N/A").orNa()
             DrmEntry(
                 name = description.ifBlank { uuid.toString() },
-                result = DrmResult.Supported("UUID: $uuid\nVendor: $vendor\nCDM Version: $version"),
+                result = DrmResult.Supported("UUID: $uuid\n" + drm.vendorAndVersion()),
             )
         }
     } catch (e: Exception) {

@@ -34,7 +34,10 @@ class DRMChecker(
     private fun String.orNa(): String = ifBlank { "N/A" }
 
     fun checkWidevineSupport(): DrmResult = checkDrmSupport(WIDEVINE_UUID, "Widevine") { drm ->
-        val level = drm.getPropertyString("securityLevel").orNa()
+        // Guarded like every other read: a security level the CDM withholds (a plugin
+        // still provisioning, a dead service) used to throw the vendor, version, system
+        // ID and HDCP lines away with it, when those are what the check is for.
+        val level = runCatching { drm.getPropertyString("securityLevel") }.getOrDefault("N/A").orNa()
         // hdcpLevel is the level negotiated with the displays connected right now;
         // maxHdcpLevel is what the device can reach, which is what a check is for.
         val hdcp = runCatching { drm.getPropertyString("hdcpLevel") }.getOrDefault("N/A").orNa()

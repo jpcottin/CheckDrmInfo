@@ -120,7 +120,7 @@ app/src/main/java/com/example/checkdrminfo/
 | `DRMViewModelTest` | 19 | `MainDispatcherRule` + `kotlinx-coroutines-test`; shareable report layout and the still-checking marker; the loading placeholders and the declared entry order; one scan at a time, and a rescan shows the placeholders again until its results are in; a discovered scheme listed after the named ones and in the report |
 | `DeviceInfoTest` | 3 | `DeviceInfo` default-value safety |
 | `PreviewScreenshotTests` (screenshot) | 4 | Compose Preview screenshot tests, `validateDebugScreenshotTest` against the recorded references |
-| `DrmUiTest` (instrumented) | 11 | Compose UI tests for all component states, and the app bar actions (rescan asks for a new scan) |
+| `DrmUiTest` (instrumented) | 12 | Compose UI tests for all component states, and the app bar actions (rescan asks for a new scan, share waits until the scan is in) |
 
 Run unit tests:
 ```

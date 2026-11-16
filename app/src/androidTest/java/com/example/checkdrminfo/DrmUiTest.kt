@@ -1,6 +1,8 @@
 package com.example.checkdrminfo
 
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -16,6 +18,9 @@ import com.example.checkdrminfo.ui.DrmCheckItem
 import com.example.checkdrminfo.ui.DrmInfoContent
 import com.example.checkdrminfo.ui.DrmInfoScaffold
 import com.example.checkdrminfo.ui.theme.CheckDrmInfoTheme
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -126,6 +131,34 @@ class DrmUiTest {
         composeTestRule.waitForIdle()
         assertEquals(1, rescans)
         assertEquals(0, shares)
+    }
+
+    @Test
+    fun drmInfoScaffold_shareWaitsForTheScan() {
+        var shares = 0
+        var state by mutableStateOf(
+            fakeState.copy(
+                drmEntries = fakeState.drmEntries.map { it.copy(result = DrmResult.Loading) },
+                isLoading = true,
+            ),
+        )
+        composeTestRule.setContent {
+            CheckDrmInfoTheme {
+                DrmInfoScaffold(state = state, useTwoPane = false, onRescan = {}, onShare = { shares++ })
+            }
+        }
+        val share = composeTestRule.onNodeWithContentDescription("Share DRM report")
+        share.assertIsNotEnabled()
+        share.performClick()
+        composeTestRule.waitForIdle()
+        assertEquals(0, shares)                 // nothing half-checked goes out
+
+        state = fakeState                       // the scan is in
+        composeTestRule.waitForIdle()
+        share.assertIsEnabled()
+        share.performClick()
+        composeTestRule.waitForIdle()
+        assertEquals(1, shares)
     }
 
     // ── DrmCheckItem ──────────────────────────────────────────────────────────

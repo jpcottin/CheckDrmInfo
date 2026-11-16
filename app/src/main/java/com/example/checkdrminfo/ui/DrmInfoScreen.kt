@@ -67,7 +67,8 @@ fun DrmInfoScreen(
 /**
  * The app bar and the content it sits above. The rescan action probes the DRM systems again:
  * the HDCP level follows the displays connected at the time of the scan, so plugging a
- * screen in (or unplugging it) is otherwise only reflected by relaunching the app.
+ * screen in (or unplugging it) is otherwise only reflected by relaunching the app. The
+ * share action is disabled while a scan runs, so a report never goes out half-checked.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -86,7 +87,9 @@ fun DrmInfoScaffold(
                     IconButton(onClick = onRescan) {
                         Icon(Icons.Default.Refresh, contentDescription = "Rescan DRM systems")
                     }
-                    IconButton(onClick = onShare) {
+                    // A report shared mid-scan would read "checking…" on every row:
+                    // sharing waits until the scan has something to say.
+                    IconButton(onClick = onShare, enabled = !state.isLoading) {
                         Icon(Icons.Default.Share, contentDescription = "Share DRM report")
                     }
                 },

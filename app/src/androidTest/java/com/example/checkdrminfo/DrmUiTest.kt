@@ -1,6 +1,11 @@
 package com.example.checkdrminfo
 
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -206,6 +211,30 @@ class DrmUiTest {
         }
         composeTestRule.onNodeWithText("Widevine").assertIsDisplayed()
         composeTestRule.onNodeWithText("Checking…").assertIsDisplayed()
+    }
+
+    @Test
+    fun drmCheckItem_readsAsOneStop() {
+        // TalkBack lands on the row once and reads the status with the scheme it belongs
+        // to; split into three stops, "Not Supported" would be heard without a name.
+        composeTestRule.setContent {
+            CheckDrmInfoTheme {
+                DrmCheckItem(DrmEntry("PlayReady", DrmResult.NotSupported("Not supported")))
+            }
+        }
+        composeTestRule
+            .onNode(hasContentDescription("Not Supported") and hasText("PlayReady") and hasText("Not supported"))
+            .assertIsDisplayed()
+    }
+
+    @Test
+    fun drmInfoContent_sectionTitlesAreHeadings() {
+        composeTestRule.setContent {
+            CheckDrmInfoTheme { DrmInfoContent(state = fakeState, useTwoPane = false) }
+        }
+        val heading = SemanticsMatcher.keyIsDefined(SemanticsProperties.Heading)
+        composeTestRule.onNodeWithText("Device Info").assert(heading)
+        composeTestRule.onNodeWithText("DRM Support").assert(heading)
     }
 
     // ── DeviceInfoSection ─────────────────────────────────────────────────────

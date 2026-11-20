@@ -62,6 +62,9 @@ For Widevine, the app additionally reports:
 
 Every other scheme found present reports its CDM vendor and version.
 
+With TalkBack, each scheme is one stop that reads its status, name and details together, and
+the **Device Info** and **DRM Support** titles are headings to jump between.
+
 The app scans once at launch; the **rescan** action in the app bar probes everything again.
 The HDCP level follows the displays connected at the time of the scan, so rescan after plugging
 a screen in (or unplugging it) instead of relaunching the app.
@@ -120,7 +123,7 @@ app/src/main/java/com/example/checkdrminfo/
 | `DRMViewModelTest` | 19 | `MainDispatcherRule` + `kotlinx-coroutines-test`; shareable report layout and the still-checking marker; the loading placeholders and the declared entry order; one scan at a time, and a rescan shows the placeholders again until its results are in; a discovered scheme listed after the named ones and in the report |
 | `DeviceInfoTest` | 3 | `DeviceInfo` default-value safety |
 | `PreviewScreenshotTests` (screenshot) | 4 | Compose Preview screenshot tests, `validateDebugScreenshotTest` against the recorded references |
-| `DrmUiTest` (instrumented) | 12 | Compose UI tests for all component states, and the app bar actions (rescan asks for a new scan, share waits until the scan is in) |
+| `DrmUiTest` (instrumented) | 14 | Compose UI tests for all component states, the app bar actions (rescan asks for a new scan, share waits until the scan is in), and TalkBack semantics (each scheme row is one stop, the section titles are headings) |
 
 Run unit tests:
 ```

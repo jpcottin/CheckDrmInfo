@@ -28,6 +28,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
@@ -153,6 +155,8 @@ private fun DrmSectionContent(state: DrmInfoState) {
         text = "DRM Support",
         style = MaterialTheme.typography.titleLarge,
         fontWeight = FontWeight.Bold,
+        // A heading, so TalkBack's heading navigation jumps between the two sections.
+        modifier = Modifier.semantics { heading() },
     )
     Spacer(modifier = Modifier.height(8.dp))
     if (state.isLoading && state.drmEntries.isEmpty()) {

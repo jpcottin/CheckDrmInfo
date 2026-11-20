@@ -16,6 +16,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -40,6 +42,7 @@ fun DeviceInfoSection(deviceInfo: DeviceInfo, modifier: Modifier = Modifier) {
             style = MaterialTheme.typography.labelLarge,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.secondary,
+            modifier = Modifier.semantics { heading() },
         )
         DeviceInfoItem("Manufacturer", deviceInfo.manufacturer)
         DeviceInfoItem("Model", deviceInfo.model)
@@ -70,6 +73,10 @@ fun DrmCheckItem(entry: DrmEntry, modifier: Modifier = Modifier) {
         verticalAlignment = Alignment.Top,
         modifier = modifier
             .fillMaxWidth()
+            // One TalkBack stop per scheme: the status, the name and the details are read
+            // together ("Supported, Widevine, Security Level: L1…") instead of as three
+            // stops whose status says nothing about which scheme it belongs to.
+            .semantics(mergeDescendants = true) {}
             .padding(vertical = 8.dp),
     ) {
         DrmStatusIcon(entry.result)

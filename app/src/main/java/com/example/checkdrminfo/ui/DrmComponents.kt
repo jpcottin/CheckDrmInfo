@@ -153,9 +153,24 @@ private val sampleDevice = DeviceInfo(
     fingerprint = "google/cheetah/cheetah:14/UP1A.231005.007/10754064:user/release-keys",
 )
 
+/**
+ * Widevine details as DRMChecker.checkWidevineSupport writes them, so the previews (and the
+ * screenshot references recorded from them) show the lines the app shows: the current and
+ * maximum HDCP level are HDCP names ("HW_SECURE_ALL" is a security level, not one), and the
+ * system ID and OEMCrypto API version follow the CDM version.
+ */
+internal val sampleWidevineDetails = """
+    Security Level: L1 (L1=true L2=false L3=false)
+    HDCP Level: Disconnected (max HDCP-2.3)
+    Vendor: Google
+    CDM Version: 18.1.0
+    System ID: 4464
+    OEMCrypto API: 18
+""".trimIndent()
+
 class DrmEntryPreviewProvider : PreviewParameterProvider<DrmEntry> {
     override val values = sequenceOf(
-        DrmEntry("Widevine", DrmResult.Supported("Security Level: L1 (L1=true L2=false L3=false)\nHDCP Level: HW_SECURE_ALL\nVendor: Google\nCDM Version: 16.0.0")),
+        DrmEntry("Widevine", DrmResult.Supported(sampleWidevineDetails)),
         DrmEntry("ClearKey", DrmResult.Supported("Vendor: Google\nCDM Version: 1.2")),
         DrmEntry("PlayReady", DrmResult.NotSupported("PlayReady is not supported on this device.")),
         DrmEntry("Marlin", DrmResult.NotSupported("Marlin is not supported on this device.")),
@@ -179,7 +194,7 @@ fun DrmCheckItemPreview(
 fun DrmCheckItemLightDarkPreview() {
     CheckDrmInfoTheme {
         Column {
-            DrmCheckItem(DrmEntry("Widevine", DrmResult.Supported("Security Level: L1\nHDCP: HW_SECURE_ALL")))
+            DrmCheckItem(DrmEntry("Widevine", DrmResult.Supported(sampleWidevineDetails)))
             DrmCheckItem(DrmEntry("PlayReady", DrmResult.NotSupported("Not supported")))
             DrmCheckItem(DrmEntry("Marlin", DrmResult.Loading))
         }

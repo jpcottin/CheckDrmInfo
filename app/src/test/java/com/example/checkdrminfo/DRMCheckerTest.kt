@@ -5,6 +5,7 @@ import android.media.MediaDrmException
 import android.util.Log
 import androidx.media3.common.C
 import com.example.checkdrminfo.model.DrmResult
+import com.example.checkdrminfo.ui.sampleWidevineDetails
 import io.mockk.every
 import io.mockk.verify
 import io.mockk.mockk
@@ -171,6 +172,22 @@ class DRMCheckerTest {
         val details = (checker.checkWidevineSupport() as DrmResult.Supported).details
         assertTrue(details, details.contains("System ID: 7371"))
         assertTrue(details, details.contains("OEMCrypto API: 17"))
+    }
+
+    @Test
+    fun `checkWidevineSupport - the previews show the lines the checker writes`() {
+        // The previews and the screenshot references recorded from them use this sample:
+        // it must stay what the checker writes for those properties, line for line.
+        every { MediaDrm.isCryptoSchemeSupported(C.WIDEVINE_UUID) } returns true
+        every { mockDrm.getPropertyString("securityLevel") }       returns "L1"
+        every { mockDrm.getPropertyString("hdcpLevel") }           returns "Disconnected"
+        every { mockDrm.getPropertyString("maxHdcpLevel") }        returns "HDCP-2.3"
+        every { mockDrm.getPropertyString("vendor") }              returns "Google"
+        every { mockDrm.getPropertyString("version") }             returns "18.1.0"
+        every { mockDrm.getPropertyString("systemId") }            returns "4464"
+        every { mockDrm.getPropertyString("oemCryptoApiVersion") } returns "18"
+
+        assertEquals(DrmResult.Supported(sampleWidevineDetails), checker.checkWidevineSupport())
     }
 
     @Test
